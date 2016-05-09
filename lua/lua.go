@@ -24,6 +24,10 @@ import "unsafe"
 
 import "fmt"
 
+type Restrictions C.struct_st_restrictions
+
+const Sizeof_Restrictions = C.sizeof_struct_st_restrictions
+
 type LuaStackEntry struct {
 	Name        string
 	Source      string
@@ -32,7 +36,7 @@ type LuaStackEntry struct {
 }
 
 func newState(L *C.lua_State) *State {
-	newstate := &State{L, 0, make([]interface{}, 0, 8), make([]uint, 0, 8)}
+	newstate := &State{L, 0, make([]interface{}, 0, 8), make([]uint, 0, 8), nil}
 	registerGoState(newstate)
 	C.clua_setgostate(L, C.size_t(newstate.Index))
 	C.clua_initstate(L)
@@ -336,6 +340,14 @@ func NewStateAlloc(f Alloc) *State {
 	return newState(ls)
 }
 
+func NewStateRestrictive(memlimit uint) *State {
+    rs := &Restrictions{C.uint(0), C.uint(memlimit)}
+    ls := C.clua_newstate_restrictive((*C.struct_st_restrictions)(unsafe.Pointer(rs)))
+    state := newState(ls)
+    state.restrictions = rs
+    return state
+}
+
 // lua_newtable
 func (L *State) NewTable() {
 	C.lua_createtable(L.s, 0, 0)
@@ -347,7 +359,7 @@ func (L *State) NewThread() *State {
 	//TODO: should have same lists as parent
 	//		but may complicate gc
 	s := C.lua_newthread(L.s)
-	return &State{s, 0, nil, nil}
+	return &State{s, 0, nil, nil, nil}
 }
 
 // lua_next

@@ -2,6 +2,11 @@
 
 typedef struct { void *t; void *v; } GoInterface;
 
+typedef struct st_restrictions {
+    unsigned int memusage;
+    unsigned int memlimit;
+} LuaRestrictions;
+
 #define GOLUA_DEFAULT_MSGHANDLER "golua_default_msghandler"
 
 /* function to setup metatables, etc */
@@ -18,6 +23,7 @@ size_t clua_getgostate(lua_State* L);
 GoInterface clua_atpanic(lua_State* L, unsigned int panicf_id);
 int clua_callluacfunc(lua_State* L, lua_CFunction f);
 lua_State* clua_newstate(void* goallocf);
+lua_State* clua_newstate_restrictive(LuaRestrictions* restrictions);
 void clua_setallocf(lua_State* L, void* goallocf);
 
 void clua_openbase(lua_State* L);
