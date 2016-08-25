@@ -35,9 +35,6 @@ type State struct {
 
 	// Freelist for funcs indices, to allow for freeing
 	freeIndices []uint
-
-    // Memory restrictions
-    restrictions *Restrictions
 }
 
 var goStates map[uintptr]*State

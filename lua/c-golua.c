@@ -10,11 +10,6 @@
 
 #define GOLUA_DEFAULT_MSGHANDLER "golua_default_msghandler"
 
-typedef struct st_restrictions {
-    unsigned int memusage;
-    unsigned int memlimit;
-} LuaRestrictions;
-
 static const char GoStateRegistryKey = 'k'; //golua registry key
 static const char PanicFIDRegistryKey = 'k';
 
@@ -330,37 +325,6 @@ lua_State* clua_newstate(void* goallocf)
 	return lua_newstate(&allocwrapper,goallocf);
 }
 
-// Used by clua_newstate_restrictive
-void* restrictive_allocator(void *ud, void *ptr, size_t osize, size_t nsize) {
-    unsigned int newsize;
-    LuaRestrictions *restrictions = (LuaRestrictions *)ud;
-    unsigned int *memlimit = &restrictions->memlimit;
-    unsigned int *memusage = &restrictions->memusage;
-    void *p;
-    if (0 == nsize) {
-        // free
-        *memusage = *memusage - osize;
-        free(ptr);
-        return NULL;
-    }
-    else {
-        // alloc or realloc
-        newsize = (ptr) ? *memusage + nsize - osize : *memusage + nsize;
-        if (newsize > *memlimit) {
-            return NULL;
-        } 
-        else {
-            p = realloc(ptr, nsize);
-            if (p) {
-                *memusage = newsize;
-            } else {
-                abort();
-            }
-            return p;
-        }
-    }
-}
-
 void*  stdlua_allocator(void *ud, void *ptr, size_t osize, size_t nsize) {
   (void)ud; (void)osize;  /* not used */
   if (nsize == 0) {
@@ -372,12 +336,9 @@ void*  stdlua_allocator(void *ud, void *ptr, size_t osize, size_t nsize) {
   }
 }
 
-lua_State* clua_newstate_restrictive(LuaRestrictions *restrictions)
+lua_State* clua_newstate_restrictive(size_t memlimit)
 {
-    lua_State *state = lua_newstate(&restrictive_allocator, restrictions);
-    //lua_State *state = lua_newstate(&stdlua_allocator, memusage);
-    lua_setallocf(state, &restrictive_allocator, restrictions);
-    //lua_setallocf(state, &stdlua_allocator, memusage);
+    lua_State *state = luaL_newstate_limited(memlimit);
     return state;
 }
 
