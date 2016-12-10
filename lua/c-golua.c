@@ -12,6 +12,7 @@
 
 static const char GoStateRegistryKey = 'k'; //golua registry key
 static const char PanicFIDRegistryKey = 'k';
+static const char GoDebugHookRegistryKey = 'k';
 
 /* taken from lua5.2 source */
 void *testudata(lua_State *L, int ud, const char *tname)
@@ -397,7 +398,14 @@ void clua_openos(lua_State* L)
 	lua_call(L, 1, 0);
 }
 
-void clua_hook_function(lua_State *L, lua_Debug *ar)
+void clua_opendebug(lua_State* L)
+{
+    lua_pushcfunction(L, &luaopen_debug);
+    lua_pushstring(L, "debug");
+    lua_call(L, 1, 0);
+}
+
+void clua_instructionlimit_handler(lua_State *L, lua_Debug *ar)
 {
 	lua_checkstack(L, 2);
 	lua_pushstring(L, "Lua execution quantum exceeded");
@@ -406,7 +414,24 @@ void clua_hook_function(lua_State *L, lua_Debug *ar)
 
 void clua_setexecutionlimit(lua_State* L, int n)
 {
-	lua_sethook(L, &clua_hook_function, LUA_MASKCOUNT, n);
+    lua_sethook(L, &clua_instructionlimit_handler, LUA_MASKCOUNT, n);
 }
 
+void callback_debughook(lua_State *L, lua_Debug *ar)
+{
+    lua_pushlightuserdata(L,(void*)&GoDebugHookRegistryKey);
+    lua_gettable(L,LUA_REGISTRYINDEX);
+    unsigned int fid = lua_tointeger(L,-1);
+    lua_pop(L,1);
+    size_t gostateindex = clua_getgostate(L);
+    return golua_callhookfunction(gostateindex, fid, ar);
+}
 
+void clua_setdebughook(lua_State* L, unsigned int hookfid, int mask, int count)
+{
+    lua_pushlightuserdata(L,(void*)&GoDebugHookRegistryKey);
+    lua_pushinteger(L, hookfid);
+    lua_settable(L, LUA_REGISTRYINDEX);
+
+    lua_sethook(L, &callback_debughook, mask, count);
+}

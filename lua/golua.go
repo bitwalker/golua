@@ -21,6 +21,10 @@ type Alloc func(ptr unsafe.Pointer, osize uint, nsize uint) unsafe.Pointer
 // This is the type of go function that can be registered as lua functions
 type LuaGoFunction func(L *State) int
 
+type DebugHookFunction func(L *State, ar *Debug)
+
+type Debug C.lua_Debug
+
 // Wrapper to keep cgo from complaining about incomplete ptr type
 //export State
 type State struct {
@@ -226,6 +230,13 @@ func golua_callpanicfunction(gostateindex uintptr, id uint) int {
 	L1 := getGoState(gostateindex)
 	f := L1.registry[id].(LuaGoFunction)
 	return f(L1)
+}
+
+//export golua_callhookfunction
+func golua_callhookfunction(gostateindex uintptr, id uint, ar *C.lua_Debug) {
+	L1 := getGoState(gostateindex)
+	f := L1.registry[id].(DebugHookFunction)
+	f(L1, (*Debug)(ar))
 }
 
 //export golua_idtointerface

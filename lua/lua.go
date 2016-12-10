@@ -175,6 +175,14 @@ func (L *State) AtPanic(panicf LuaGoFunction) (oldpanicf LuaGoFunction) {
 	return nil
 }
 
+func (L *State) SetDebugHook(f DebugHookFunction, mask, count int) {
+	fid := uint(0)
+	if f != nil {
+		fid = L.register(f)
+		C.clua_setdebughook(L.s, C.uint(fid), C.int(mask), C.int(count))
+	}
+}
+
 func (L *State) pcall(nargs, nresults, errfunc int) int {
 	return int(C.lua_pcall(L.s, C.int(nargs), C.int(nresults), C.int(errfunc)))
 }
@@ -625,6 +633,11 @@ func (L *State) OpenOS() {
 	C.clua_openos(L.s)
 }
 
+// Calls luaopen_debug
+func (L *State) OpenDebug() {
+	C.clua_opendebug(L.s)
+}
+
 // Sets the maximum number of operations to execute at instrNumber, after this the execution ends
 func (L *State) SetExecutionLimit(instrNumber int) {
 	C.clua_setexecutionlimit(L.s, C.int(instrNumber))
@@ -659,7 +672,7 @@ func (L *State) RaiseError(msg string) {
 	st := L.StackTrace()
 	prefix := ""
 	if len(st) >= 1 {
-		prefix = fmt.Sprintf("%s:%d: ", st[1].ShortSource, st[1].CurrentLine)
+		prefix = fmt.Sprintf("%s:%d: ", st[0].ShortSource, st[0].CurrentLine)
 	}
 	panic(&LuaError{0, prefix + msg, st})
 }

@@ -20,6 +20,7 @@ int clua_callluacfunc(lua_State* L, lua_CFunction f);
 lua_State* clua_newstate(void* goallocf);
 lua_State* clua_newstate_restrictive(unsigned int memlimit);
 void clua_setallocf(lua_State* L, void* goallocf);
+void clua_setdebughook(lua_State* L, unsigned int hookfid, int mask, int count);
 
 void clua_openbase(lua_State* L);
 void clua_openio(lua_State* L);
@@ -28,6 +29,7 @@ void clua_openpackage(lua_State* L);
 void clua_openstring(lua_State* L);
 void clua_opentable(lua_State* L);
 void clua_openos(lua_State* L);
+void clua_opendebug(lua_State* L);
 void clua_setexecutionlimit(lua_State* L, int n);
 
 int clua_isgofunction(lua_State *L, int n);
